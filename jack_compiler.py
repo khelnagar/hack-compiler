@@ -4,6 +4,17 @@ from compilation_engine import CompilationEngine
 
 
 
+"""
+
+Jack compiler accepts either a path to a Jack program file example.jack or a directory
+containing as many as Jack files.
+
+To run the compiler, go to the root of the project in a terminal and provide the required path
+as the first argument in the terminal;
+python jack_compiler complete\path\to\the\file\or\dir
+
+"""
+
 def parse_file(file):
 	tokenizer = JackTokenizer(file)
 	c_engine = CompilationEngine(tokenizer)
