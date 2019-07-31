@@ -9,5 +9,5 @@ The compiler receives a high-level code written in Jack - a programmigng languag
 
 Next these VM instructions either run on a virtual machine implementation or is translated down to assembly code by a VM translator. This should be the second step in the two-tier compilation mechanism.
 
-Eventually, the assembly code is translated by the Hack assembler (github.com/khelnagar/hack-assembler) into binary code that runs on the Hack computer architecture developed during the course.
+Eventually, the assembly code is translated by the Hack assembler (https://github.com/khelnagar/hack-assembler) into binary code that runs on the Hack computer architecture developed during the course.
 
