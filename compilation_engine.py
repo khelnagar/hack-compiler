@@ -23,7 +23,6 @@ class CompilationEngine:
 		self.tokenizer = tokenizer
 		self.symbol_table = None
 		self.vm_writer = None
-		self.var_count = 0 # used for the object memory allocation
 		self.compile_class()
 	
 	def __del__(self):
@@ -39,6 +38,12 @@ class CompilationEngine:
 		label = f'while_{case}{CompilationEngine.WHILE_COUNTER}'.upper()
 		return label
 	
+	def class_fields_count(self):
+		"""asks the symbol table about the number of fields of the current class"""
+		kind_entries = self.symbol_table.class_level.values()
+		fields = list(filter(lambda obj: obj['kind'] == 'field', kind_entries))
+		return len(fields)
+
 	def segment(self, term):
 		segment_switcher = {
 			'field': 'this',
@@ -108,11 +113,7 @@ class CompilationEngine:
 				self.eat(ident_name) # varName
 		
 	def compile_varDec(self):
-		# n_vars needed for function declaration in vm 
-		# ex: function Main.main 3
-		n_vars = 0
 		while self.tokenizer.current_token() == 'var':
-			n_vars += 1
 			self.eat('var')
 
 			# add var declarations to subroutine symbol_table
@@ -137,12 +138,8 @@ class CompilationEngine:
 				)
 				self.eat(ident_name) # varName
 
-				n_vars += 1
-
 			self.eat(';')
 		
-		return n_vars
-
 	def compile_expressionList(self):
 		n_args = 0
 		# if there are args passed to the subroutineCall
@@ -402,12 +399,13 @@ class CompilationEngine:
 			self.eat('(')
 			self.compile_parameterList() # subroutine args
 			
-			# create space in memory for the object
 			if subroutine == 'constructor':
-				self.vm_writer.write_push('constant', self.var_count)
+				# create space in memory for the object
+				self.vm_writer.write_push('constant', self.class_fields_count())
 				self.vm_writer.write_call('Memory.alloc', 1)
 				self.vm_writer.write_pop('pointer', 0)
 			elif subroutine == 'method':
+				# anchor the 'this' address to 'pointer 0'
 				self.vm_writer.write_push('argument', 0)
 				self.vm_writer.write_pop('pointer', 0)
 
@@ -417,7 +415,6 @@ class CompilationEngine:
 			self.eat('}')
 
 	def compile_classVarDec(self):
-		n_class_var = 1
 		ident_kind = self.tokenizer.current_token()
 		self.eat(ident_kind) # static|field
 		ident_type = self.tokenizer.current_token()
@@ -441,16 +438,8 @@ class CompilationEngine:
 			)
 			self.eat(ident_name) # varName
 
-			n_class_var += 1
-
 		self.eat(';')
 		
-		# we need memory only for object fields
-		if ident_kind == 'static':
-			n_class_var = 0
-		
-		return n_class_var
-
 	def compile_class(self):
 		self.tokenizer.advance()
 		self.eat('class')
@@ -464,7 +453,6 @@ class CompilationEngine:
 		self.eat(class_name)
 		self.eat('{')
 		while self.tokenizer.current_token() in ['static', 'field']:
-			n_class_var = self.compile_classVarDec()
-			self.var_count += n_class_var
+			self.compile_classVarDec()
 		self.compile_subroutineDec()
 		self.eat('}')
